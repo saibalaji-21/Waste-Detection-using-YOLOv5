@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waste Detection</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      background-color: #101820;
+      color: #f5f5f5;
+      font-family: 'Helvetica Neue', sans-serif;
+    }
+
+    .header {
+      background-color: #1a1a1a;
+      padding: 2rem 1rem;
+      text-align: center;
+      border-bottom: 2px solid #282828;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      color: #ffcc00;
+    }
+
+    .main-section {
+      padding: 2rem 1rem;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    .btn-rounded {
+      border-radius: 25px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+    }
+
+    .btn-upload {
+      background-color: #ffcc00;
+      border: none;
+      color: #000;
+      width: 100%;
+    }
+
+    .btn-upload:hover {
+      background-color: #e6b800;
+    }
+
+    .btn-predict {
+      background-color: #00b386;
+      border: none;
+      color: #fff;
+      width: 100%;
+    }
+
+    .btn-predict:hover {
+      background-color: #009973;
+    }
+
+    .card-custom {
+      background-color: #1e1e1e;
+      border: 1px solid #2e2e2e;
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 10px rgba(255, 204, 0, 0.1);
+    }
+
+    .footer-logo {
+      display: block;
+      margin: 2rem auto 1rem;
+      width: 100px;
+      filter: brightness(0.9);
+    }
+
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      display: none;
+    }
+
+    .spinner-border {
+      width: 3rem;
+      height: 3rem;
+    }
+
+    video, img {
+      max-width: 100%;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <h1>Waste Detection using YOLOv5</h1>
+  </header>
+
+  <main class="main-section">
+    <div class="mb-3">
+      <button type="button" class="btn btn-upload btn-rounded" id="uload">Upload Image</button>
+    </div>
+    <div class="mb-4">
+      <button type="button" class="btn btn-predict btn-rounded" id="send">Predict</button>
+    </div>
+
+    <input type="file" id="fileinput" style="display:none" />
+    <input type="hidden" id="url" value="../predict" />
+
+    <div class="card-custom">
+      <video autoplay id="video" poster="https://images.unsplash.com/photo-1581090700227-1e37b190418e?auto=format&fit=crop&w=800&q=80"></video>
+      <img id="photo" style="display:none;">
+      <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+
+    <div class="card-custom text-center">
+      <h4 class="mb-4">Prediction Results</h4>
+      <div class="res-part2"></div>
+    </div>
+  </main>
+
+  <img class="footer-logo" src="https://apparel.ineuronvision.com/static/logo.png" />
+
+  <div id="loading">
+    <div class="spinner-border text-light" role="status"></div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    let base_data = "";
+
+    function sendRequest(base64Data) {
+      if (!base64Data) return;
+      $("#loading").show();
+
+      $.ajax({
+        url: $("#url").val(),
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ image: base64Data }),
+        success: function (res) {
+          $(".res-part2").html(`<img src="data:image/jpeg;base64,${res.image}" class="img-fluid" />`);
+          $("#loading").hide();
+        }
+      });
+    }
+
+    $(document).ready(function () {
+      $('#send').click(() => sendRequest(base_data));
+      $('#uload').click(() => $('#fileinput').trigger('click'));
+
+      $("#fileinput").change(function () {
+        if (this.files && this.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              canvas.width = this.width;
+              canvas.height = this.height;
+              ctx.drawImage(this, 0, 0);
+              base_data = canvas.toDataURL('image/jpeg', 1.0).replace(/^data:image.+;base64,/, '');
+            }
+            img.src = e.target.result;
+            $('#photo').attr('src', e.target.result).show();
+            $('#video').hide();
+          }
+          reader.readAsDataURL(this.files[0]);
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>
